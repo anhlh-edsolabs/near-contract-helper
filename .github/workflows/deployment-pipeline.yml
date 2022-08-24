@@ -1,0 +1,45 @@
+name: Deployment Pipeline
+
+on:
+  push:
+    branch:
+      - master
+  pull_request:
+
+jobs:
+  checks:
+    if: false
+    uses: ./.github/workflows/checks.yml
+
+  image:
+    uses: ./.github/workflows/build-and-upload-image.yml
+
+  testnet-staging-indexer:
+    needs: image
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      gh-environment: testnet-staging
+      task-definition: ./ecs/indexer.task-definition.json
+      task-definition-family: testnet-staging-indexer-service-task-definition
+      task-execution-role: testnet-ecs-task-execution-role
+      container-name: testnet-staging-indexer-container
+      aws-environment: testnet
+      near-wallet-environment: testnet_STAGING
+      aws-logs-group: testnet-staging-indexer-service
+      aws-region: us-west-2
+    secrets: inherit
+
+  testnet-staging-contract-helper:
+    needs: image
+    uses: ./.github/workflows/deploy-service.yml
+    with:
+      gh-environment: testnet-staging
+      task-definition: ./ecs/contract-helper.task-definition.json
+      task-definition-family: testnet-staging-service-task-definition
+      task-execution-role: testnet-ecs-task-execution-role
+      container-name: testnet-staging-backend-container
+      aws-environment: testnet
+      near-wallet-environment: testnet_STAGING
+      aws-logs-group: testnet-staging-service-log-group
+      aws-region: us-west-2
+    secrets: inherit
